@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Avaliação do Colaborador</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --line: #d9d9d9;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --green: #22c55e;
+      --primary: #2563eb;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+    }
+
+    h1 { margin-top: 0; }
+
+    .sub {
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 8px;
+      text-align: center;
+    }
+
+    th:first-child, td:first-child {
+      text-align: left;
+      width: 35%;
+    }
+
+    .flag-btn {
+      border: none;
+      background: transparent;
+      font-size: 18px;
+      cursor: pointer;
+      opacity: .35;
+      transition: .2s;
+    }
+
+    .flag-btn:hover { opacity: .8; }
+
+    .flag-btn.active {
+      opacity: 1;
+      transform: scale(1.08);
+    }
+
+    .score-box {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 18px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .score {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .status {
+      padding: 10px 14px;
+      border-radius: 999px;
+      color: #fff;
+      font-weight: 700;
+      min-width: 280px;
+      text-align: center;
+    }
+
+    .status.red { background: var(--red); }
+    .status.yellow { background: var(--yellow); }
+    .status.green { background: var(--green); }
+
+    .legend {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Avaliação do Colaborador</h1>
+    <p class="sub">Clique em uma bandeira por linha para atribuir a nota do item.</p>
+
+    <table id="evaluationTable">
+      <thead>
+        <tr>
+          <th>Pergunta</th>
+          <th>Péssimo</th>
+          <th>Ruim</th>
+          <th>Regular</th>
+          <th>Bom</th>
+          <th>Ótimo</th>
+          <th>Parabéns</th>
+          <th>Pontuação</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="7" style="text-align:right;"><strong>TOTAL</strong></td>
+          <td id="totalCell"><strong>0 / 100</strong></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="score-box">
+      <div class="score" id="summary">Resultado: 0%</div>
+      <div class="status red" id="statusText">Alerta Vermelho: Reunião de alinhamento necessária.</div>
+    </div>
+
+    <div class="legend">
+      <div><strong>Regras do indicador:</strong></div>
+      <div>• Abaixo de 50: Alerta Vermelho (Reunião de alinhamento necessária)</div>
+      <div>• Entre 50 e 80: Farol Amarelo (Pontos de melhoria identificados)</div>
+      <div>• Acima de 80: Farol Verde (Desempenho excelente)</div>
+    </div>
+  </main>
+
+  <script>
+    const questions = [
+      'Uso de EPIs?',
+      'Posto Organizado?',
+      'Foi Pontual?',
+      'Ferramentas em dia?',
+      'Evitou Desperdício?',
+      'Qualidade Técnica?',
+      'Ritmo de Produção',
+      'Autonomia',
+      'Cuidado Patrimônio',
+      'Postura/Equipe'
+    ];
+
+    const columns = [
+      { label: 'Péssimo', value: 0 },
+      { label: 'Ruim', value: 10 },
+      { label: 'Regular', value: 30 },
+      { label: 'Bom', value: 60 },
+      { label: 'Ótimo', value: 80 },
+      { label: 'Parabéns', value: 100 }
+    ];
+
+    const tbody = document.querySelector('#evaluationTable tbody');
+    const totalCell = document.getElementById('totalCell');
+    const summary = document.getElementById('summary');
+    const statusText = document.getElementById('statusText');
+
+    const state = Array(questions.length).fill(0);
+
+    function getStatus(score) {
+      if (score < 50) {
+        return { cls: 'red', text: 'Alerta Vermelho: Reunião de alinhamento necessária.' };
+      }
+      if (score <= 80) {
+        return { cls: 'yellow', text: 'Farol Amarelo: Pontos de melhoria identificados.' };
+      }
+      return { cls: 'green', text: 'Farol Verde: Desempenho excelente.' };
+    }
+
+    function updateSummary() {
+      const total = state.reduce((sum, item) => sum + item, 0);
+      const avg = Math.round(total / questions.length);
+      totalCell.innerHTML = `<strong>${avg} / 100</strong>`;
+      summary.textContent = `Resultado: ${avg}%`;
+
+      const status = getStatus(avg);
+      statusText.className = `status ${status.cls}`;
+      statusText.textContent = status.text;
+    }
+
+    function setActiveFlag(row, colIndex) {
+      row.querySelectorAll('.flag-btn').forEach((btn, index) => {
+        btn.classList.toggle('active', index === colIndex);
+      });
+    }
+
+    questions.forEach((question, rowIndex) => {
+      const tr = document.createElement('tr');
+      const questionTd = document.createElement('td');
+      questionTd.textContent = `${rowIndex + 1}. ${question}`;
+      tr.appendChild(questionTd);
+
+      columns.forEach((column, colIndex) => {
+        const td = document.createElement('td');
+        const button = document.createElement('button');
+        button.className = 'flag-btn';
+        button.innerText = '🚩';
+        button.title = `${column.label} (${column.value})`;
+
+        button.addEventListener('click', () => {
+          state[rowIndex] = column.value;
+          setActiveFlag(tr, colIndex);
+          scoreTd.textContent = column.value;
+          updateSummary();
+        });
+
+        td.appendChild(button);
+        tr.appendChild(td);
+      });
+
+      const scoreTd = document.createElement('td');
+      scoreTd.textContent = '0';
+      tr.appendChild(scoreTd);
+      tbody.appendChild(tr);
+    });
+
+    updateSummary();
+  </script>
+</body>
+</html>
